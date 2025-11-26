@@ -1,0 +1,66 @@
+{# chat/room.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<h2>Conversación #{{ conversacion_id }}</h2>
+<div id="log"></div>
+<input id="chat-message-input" placeholder="Escribe un mensaje..." autofocus />
+<button id="send">Enviar</button>
+
+<script>
+  // ——— VARS ———
+  const convId = "{{ conversacion_id }}";
+  window.USER_AVATAR_URL = "{% if user_perfil.profile_picture %}{{ user_perfil.profile_picture.url }}{% else %}{% static 'img/avatar-placeholder.png' %}{% endif %}";
+  const userAvatarUrl = window.USER_AVATAR_URL;
+
+  const scheme = location.protocol === "https:" ? "wss" : "ws";
+  const wsUrl = `${scheme}://${location.host}/ws/chat/${convId}/`;
+  const log = document.getElementById("log");
+  const input = document.getElementById("chat-message-input");
+  const btn = document.getElementById("send");
+
+  // ——— RENDER MSG ———
+  function addMessageToLog(senderName, messageContent, avatarUrl) {
+    const msgDiv = document.createElement("div");
+    msgDiv.className = "msg";
+
+    const img = document.createElement("img");
+    img.className = "avatar";
+    img.src = avatarUrl || "{% static 'img/avatar-placeholder.png' %}";
+    img.onerror = () => { img.src = "{% static 'img/avatar-placeholder.png' %}"; }; // fallback si 404
+    msgDiv.appendChild(img);
+
+    const contentDiv = document.createElement("div");
+    contentDiv.className = "message-content";
+    contentDiv.innerHTML = `<strong>${senderName}:</strong> ${messageContent}`;
+    msgDiv.appendChild(contentDiv);
+
+    log.appendChild(msgDiv);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  // ——— WS ———
+  const socket = new WebSocket(wsUrl);
+
+  socket.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.contenido) {
+      addMessageToLog(data.remitente_nombre_usuario, data.contenido, data.remitente_foto);
+    } else if (data.message) {
+      addMessageToLog(data.user || "Sistema", data.message, null);
+    }
+  };
+
+  function send() {
+    const texto = (input.value || "").trim();
+    if (!texto) return;
+    socket.send(JSON.stringify({ action: "send_message", contenido: texto, tipo: "texto" }));
+    addMessageToLog("Yo", texto, userAvatarUrl); // aquí sí tenemos la URL
+    input.value = "";
+    input.focus();
+  }
+  btn.onclick = send;
+  input.addEventListener("keydown", (e) => e.key === "Enter" && send());
+</script>
+{% endblock %}

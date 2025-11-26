@@ -1,0 +1,656 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Todos los Productos - Gifter’s{% endblock %}
+
+{% block extra_css %}
+<style>
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 2rem;
+        margin: 2rem 0;
+    }
+
+    .product-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .product-image {
+        height: 250px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .product-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .product-card:hover .product-image img {
+        transform: scale(1.05);
+    }
+
+    .product-info {
+        padding: 1.5rem;
+    }
+
+    .product-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #2d3748;
+    }
+
+    .product-brand {
+        color: #6c63ff;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .product-price {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #10b981;
+        margin-bottom: 1rem;
+    }
+
+    .product-description {
+        color: #718096;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        margin-bottom: 1rem;
+    }
+
+    .product-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: space-between;
+    }
+
+    .btn-action {
+        flex: 1;
+        padding: 0.5rem;
+        border: none;
+        border-radius: 8px;
+        background: #f7fafc;
+        color: #4a5568;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+    }
+
+    .btn-action:hover {
+        background: #6c63ff;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    /* Filtros */
+    .filters-section {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .filter-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #2d3748;
+    }
+
+    .filter-select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        background: white;
+        transition: border-color 0.3s ease;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: #6c63ff;
+    }
+
+    /* Paginación */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        margin: 3rem 0;
+        gap: 0.5rem;
+    }
+
+    .page-link {
+        padding: 0.75rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        color: #4a5568;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .page-link:hover {
+        border-color: #6c63ff;
+        color: #6c63ff;
+    }
+
+    .page-link.active {
+        background: #6c63ff;
+        border-color: #6c63ff;
+        color: white;
+    }
+
+    /* Estado vacío */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #718096;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: #cbd5e0;
+    }
+
+    /* Header de resultados */
+    .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .results-count {
+        color: #4a5568;
+        font-weight: 500;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .products-grid {
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .filters-section {
+            padding: 1rem;
+        }
+
+        .results-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+    <!-- Header con título y contador -->
+    <div class="results-header">
+        <div>
+            <h1 class="mb-2">Todos los Productos</h1>
+            <p class="results-count">
+                {% if productos.paginator.count > 0 %}
+                Mostrando {{ productos.start_index }} - {{ productos.end_index }} de {{ productos.paginator.count }}
+                productos
+                {% else %}
+                No se encontraron productos
+                {% endif %}
+            </p>
+        </div>
+
+
+
+
+
+        <!-- Botón para limpiar filtros -->
+        {% if query or selected_categoria or selected_marca %}
+        <a href="{% url 'productos_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-clockwise"></i> Limpiar Filtros
+        </a>
+        {% endif %}
+    </div>
+
+
+    <!-- Sección de Filtros -->
+    <div class="filters-section">
+        <form method="get" action="{% url 'productos_list' %}" class="row g-3">
+            <!-- Buscador -->
+            <div class="col-md-4">
+                <div class="filter-group">
+                    <label for="search-input"><i class="bi bi-search"></i> Buscar productos</label>
+                    <input type="text" class="form-control filter-select" id="search-input" name="q" value="{{ query }}"
+                        placeholder="Nombre, descripción, marca...">
+                </div>
+            </div>
+
+            {# --- Filtro por Categoría --- #}
+
+            <div class="col-md-4">
+                <div class="filter-group">
+                    <label for="categoria-filter"><i class="bi bi-tags"></i> Categoría</label>
+                    <select class="form-select filter-select" id="categoria-filter" name="categoria">
+                        <option value="">Todas las categorías</option>
+                        {% for categoria in categorias %}
+                        {% with cid=categoria.id_categoria|stringformat:"s" sel=selected_categoria|stringformat:"s" %}
+                        <option value="{{ cid }}" {% if sel == cid %}selected{% endif %}>
+                            {{ categoria.nombre_categoria }}
+                        </option>
+                        {% endwith %}
+                        {% endfor %}
+
+                    </select>
+                </div>
+            </div>
+
+
+            {# --- Filtro por Marca --- #}
+
+            <div class="col-md-4">
+                <div class="filter-group">
+                    <label for="marca-filter"><i class="bi bi-shop"></i> Marca</label>
+                    <select class="form-select filter-select" id="marca-filter" name="marca">
+                        <option value="">Todas las marcas</option>
+                        {% for marca in marcas %}
+                        {% with mid=marca.id_marca|stringformat:"s" sel=selected_marca|stringformat:"s" %}
+                        <option value="{{ mid }}" {% if sel == mid %}selected{% endif %}>
+                            {{ marca.nombre_marca }}
+                        </option>
+                        {% endwith %}
+                        {% endfor %}
+
+                    </select>
+                </div>
+            </div>
+
+
+
+            <!-- Botones de acción -->
+            <div class="col-12">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel"></i> Aplicar Filtros
+                    </button>
+                    <a href="{% url 'productos_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> Limpiar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Grid de Productos -->
+    {% if productos %}
+    <div class="products-grid">
+        {% for producto in productos %}
+<div class="product-card">
+
+<div class="product-image">
+
+    {% if producto.imagen %}
+
+        {# Caso 1: producto.imagen es un ImageField (tiene .url) #}
+        {% if producto.imagen.url %}
+            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre_producto }}">
+
+        {# Caso 2: es una URL externa (http...) #}
+        {% elif producto.imagen|slice:":4" == "http" %}
+            <img src="{{ producto.imagen }}" alt="{{ producto.nombre_producto }}">
+
+        {# Caso 3: es un archivo guardado como string en MEDIA (productos/loquesea.jpg) #}
+        {% else %}
+            <img src="/media/{{ producto.imagen }}" alt="{{ producto.nombre_producto }}">
+        {% endif %}
+
+    {% elif producto.urls_tienda.first and producto.urls_tienda.first.imagen %}
+        {# Caso 4: imagen de tienda externa guardada #}
+        <img src="{{ producto.urls_tienda.first.imagen }}" alt="{{ producto.nombre_producto }}">
+
+    {% else %}
+        {# Caso 5: no hay imagen → mostrar icono Gifter’s #}
+        <img src="{% static 'img/Gifters/favicongift.png' %}">
+    {% endif %}
+
+</div>
+
+
+    <div class="product-info">
+
+        <!-- Nombre -->
+        <h3 class="product-title">
+            {% if producto.nombre_producto %}
+                {{ producto.nombre_producto }}
+            {% else %}
+                {{ producto.nombre }}
+            {% endif %}
+        </h3>
+
+        <!-- Marca -->
+        <p class="product-brand">
+            {% if producto.id_marca %}
+                {{ producto.id_marca.nombre_marca }}
+            {% else %}
+                {{ producto.marca }}
+            {% endif %}
+        </p>
+
+        <!-- Precio -->
+        {% if producto.precio %}
+        <p class="product-price">$ {{ producto.precio }}</p>
+        {% endif %}
+
+        <!-- Descripción o categoría -->
+        <p class="product-description">
+            {% if producto.descripcion %}
+                {{ producto.descripcion|truncatechars:100 }}
+            {% else %}
+                {{ producto.categoria|truncatechars:100 }}
+            {% endif %}
+        </p>
+
+        <!-- Acciones -->
+        <div class="product-actions">
+
+            {% if producto.id_producto %}
+                <a href="{% url 'producto_detalle' producto.id_producto %}" 
+                   class="btn-action" title="Ver detalles">
+                    <i class="bi bi-eye"></i>
+                </a>
+            {% else %}
+                <a href="{% url 'producto_externo_detalle' producto.id_producto_externo %}" 
+                   class="btn-action" title="Ver detalles">
+                    <i class="bi bi-eye"></i>
+                </a>
+            {% endif %}
+
+            {% if producto.id_producto %}
+                <a href="#"
+                   class="btn-action wishlist-btn {% if producto.id_producto in favoritos_ids %}is-fav{% endif %}"
+                   data-product-id="{{ producto.id_producto }}"
+                   aria-pressed="{% if producto.id_producto in favoritos_ids %}true{% else %}false{% endif %}">
+                    {% if producto.id_producto in favoritos_ids %}
+                        <i class="bi bi-heart-fill text-danger"></i>
+                    {% else %}
+                        <i class="bi bi-heart"></i>
+                    {% endif %}
+                </a>
+            {% else %}
+    <a href="#"
+       class="btn-action wishlist-btn wishlist-btn-externo {% if producto.id_producto_externo in favoritos_externos_ids %}is-fav{% endif %}"
+       data-external-id="{{ producto.id_producto_externo }}"
+       title="{% if producto.id_producto_externo in favoritos_externos_ids %}Quitar de wishlist{% else %}Agregar a wishlist{% endif %}">
+        {% if producto.id_producto_externo in favoritos_externos_ids %}
+            <i class="bi bi-heart-fill text-danger"></i>
+        {% else %}
+            <i class="bi bi-heart"></i>
+        {% endif %}
+    </a>
+{% endif %}
+
+
+            {% if producto.url %}
+            <a href="{{ producto.url }}" target="_blank" rel="noopener"
+               class="btn-action" title="Ver en tienda">
+                <i class="bi bi-link-45deg"></i>
+            </a>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+{% endfor %}
+
+
+    </div>
+
+
+
+    <!-- Paginación -->
+    {% if productos.has_other_pages %}
+    <div class="pagination">
+        {% if productos.has_previous %}
+        <a href="?page=1{% if query %}&q={{ query }}{% endif %}{% if selected_categoria %}&categoria={{ selected_categoria }}{% endif %}{% if selected_marca %}&marca={{ selected_marca }}{% endif %}"
+            class="page-link">
+            <i class="bi bi-chevron-double-left"></i>
+        </a>
+        <a href="?page={{ productos.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_categoria %}&categoria={{ selected_categoria }}{% endif %}{% if selected_marca %}&marca={{ selected_marca }}{% endif %}"
+            class="page-link">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+        {% endif %}
+
+        {% for num in productos.paginator.page_range %}
+        {% if productos.number == num %}
+        <span class="page-link active">{{ num }}</span>
+        {% elif num > productos.number|add:'-3' and num < productos.number|add:'3' %} <a
+            href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if selected_categoria %}&categoria={{ selected_categoria }}{% endif %}{% if selected_marca %}&marca={{ selected_marca }}{% endif %}"
+            class="page-link">{{ num }}</a>
+            {% endif %}
+            {% endfor %}
+
+            {% if productos.has_next %}
+            <a href="?page={{ productos.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_categoria %}&categoria={{ selected_categoria }}{% endif %}{% if selected_marca %}&marca={{ selected_marca }}{% endif %}"
+                class="page-link">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+            <a href="?page={{ productos.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if selected_categoria %}&categoria={{ selected_categoria }}{% endif %}{% if selected_marca %}&marca={{ selected_marca }}{% endif %}"
+                class="page-link">
+                <i class="bi bi-chevron-double-right"></i>
+            </a>
+            {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Estado vacío -->
+    <div class="empty-state">
+        <i class="bi bi-search"></i>
+        <h3>No se encontraron productos</h3>
+        <p>Intenta ajustar tus filtros de búsqueda o <a href="{% url 'productos_list' %}">ver todos los productos</a>.
+        </p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Integración con el buscador del navbar
+        const navbarSearchForms = document.querySelectorAll('form[role="search"]');
+
+        navbarSearchForms.forEach(form => {
+            form.addEventListener('submit', function (e) {
+                const searchInput = this.querySelector('input[type="search"]');
+                if (searchInput && searchInput.value.trim()) {
+                    e.preventDefault();
+                    // Redirigir a la página de productos con la búsqueda
+                    window.location.href = `{% url 'productos_list' %}?q=${encodeURIComponent(searchInput.value.trim())}`;
+                }
+            });
+        });
+
+        // Auto-submit en cambio de filtros (opcional)
+        const filterSelects = document.querySelectorAll('#categoria-filter, #marca-filter');
+        filterSelects.forEach(select => {
+            select.addEventListener('change', function () {
+                this.form.submit();
+            });
+        });
+    });
+</script>
+
+<script>
+    // CSRF desde cookie (igual que antes)
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    document.addEventListener('click', async function (e) {
+        const btn = e.target.closest('.wishlist-btn');
+        if (!btn) return;
+
+        e.preventDefault();
+
+        // 🔹 Diferenciar producto interno vs externo
+        const productId = btn.getAttribute('data-product-id');        // interno
+        const externalId = btn.getAttribute('data-external-id');      // externo
+
+let url = `{% url 'favoritos_toggle' 0 %}`;
+let formData = new FormData();
+
+if (externalId) {
+    url = url.replace('/0/', `/${externalId}/`);
+    formData.append('externo', '1');
+} else if (productId) {
+    url = url.replace('/0/', `/${productId}/`);
+    formData.append('externo', '0');
+}
+
+
+
+
+        const icon = btn.querySelector('i');
+        const wasFav = btn.classList.contains('is-fav');
+        const prevTitle = btn.title;
+
+        // Animación rápida inmediata de feedback táctil
+        if (icon) icon.classList.add('heart-pop');
+        btn.classList.add('pop-bg');
+        setTimeout(() => {
+            icon && icon.classList.remove('heart-pop');
+            btn.classList.remove('pop-bg');
+        }, 420);
+
+        try {
+            const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+        'X-CSRFToken': csrftoken,
+        'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: formData
+});
+
+
+            // Si no está logueado → redirige a login
+            if (resp.redirected || resp.url.includes('{% url "login" %}')) {
+                window.location.href = "{% url 'login' %}?next={{ request.get_full_path|urlencode }}";
+                return;
+            }
+
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+            const data = await resp.json();
+            const isFav = data.state === 'added';
+
+            // Actualiza UI
+            btn.classList.toggle('is-fav', isFav);
+            btn.setAttribute('aria-pressed', isFav ? 'true' : 'false');
+            btn.title = isFav ? 'Quitar de wishlist' : 'Agregar a wishlist';
+            if (icon) icon.className = isFav ? 'bi bi-heart-fill text-danger' : 'bi bi-heart';
+
+            Toast.fire({
+                icon: isFav ? 'success' : 'info',
+                title: isFav ? 'Agregado a tu wishlist' : 'Quitado de tu wishlist'
+            });
+
+        } catch (err) {
+            console.error(err);
+            btn.classList.toggle('is-fav', wasFav);
+            btn.setAttribute('aria-pressed', wasFav ? 'true' : 'false');
+            btn.title = prevTitle;
+            if (icon) icon.className = wasFav ? 'bi bi-heart-fill text-danger' : 'bi bi-heart';
+
+            Toast.fire({ icon: 'error', title: 'Ups, no pudimos actualizar' });
+        }
+    });
+</script>
+
+<style>
+    /* Corazón con pequeño "pop" */
+    .wishlist-btn i.heart-pop {
+        animation: heart-pop 380ms ease;
+    }
+
+    @keyframes heart-pop {
+        0% {
+            transform: scale(1);
+        }
+
+        40% {
+            transform: scale(1.25);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    /* opcional: resaltar el botón un instante */
+    .wishlist-btn.pop-bg {
+        box-shadow: 0 0 0 0 rgba(108, 99, 255, .35);
+        animation: btn-glow 480ms ease;
+    }
+
+    @keyframes btn-glow {
+        0% {
+            box-shadow: 0 0 0 0 rgba(108, 99, 255, .35);
+            transform: translateY(-2px);
+        }
+
+        100% {
+            box-shadow: 0 0 0 12px rgba(108, 99, 255, 0);
+            transform: translateY(0);
+        }
+    }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Toast listo para usar
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1600,
+        timerProgressBar: true
+    });
+</script>
+
+
+{% endblock %}
