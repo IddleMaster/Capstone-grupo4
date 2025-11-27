@@ -1,0 +1,356 @@
+/* --- Estilos Generales para el Contenedor del Feed --- */
+.feed-container {
+    padding: 20px 15px;
+    background-color: #f0f2f5;
+    /* Un gris claro como fondo */
+    min-height: 100vh;
+}
+
+.feed-main-content {
+    max-width: 680px;
+    /* Ancho estándar para un feed */
+    margin: 0 auto;
+    /* Centrar el contenido */
+}
+
+/* --- Estilos para la Tarjeta de Post (Post Caard) --- */
+.post-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    margin-bottom: 20px;
+    padding: 15px;
+}
+
+/* --- Encabezado del Post (Foto de perfil y nombre) --- */
+.post-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.post-header img.profile-pic { /* Más específico: imagen con clase profile-pic DENTRO de post-header */
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+    object-fit: cover;
+    flex-shrink: 0; /* Evita que la imagen se encoja si el contenedor es pequeño */
+}
+
+.post-author-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.author-name {
+    font-weight: 600;
+    color: #050505;
+    text-decoration: none;
+}
+
+.post-timestamp {
+    font-size: 0.8rem;
+    color: #65676b;
+}
+
+/* --- Contenido del Post --- */
+.post-content p {
+    margin-bottom: 12px;
+}
+
+.post-image {
+    width: 100%;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+/* --- Acciones del Post (Me gusta, Comentar, etc.) --- */
+.post-actions {
+    display: flex;
+    justify-content: space-around;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 10px;
+    margin-top: 15px;
+}
+
+.action-btn {
+    color: #65676b;
+    text-decoration: none;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+.action-btn i {
+    margin-right: 8px;
+}
+
+/* --- Comentarios --- */
+.post-comments {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 10px;
+    margin-top: 15px;
+}
+
+.comment-form {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.comment-input {
+    flex-grow: 1;
+    border: none;
+    background-color: #f0f2f5;
+    border-radius: 20px;
+    padding: 8px 15px;
+    outline: none;
+}
+
+/* --- Estilos para el nuevo formulario de creación de post --- */
+
+.post-card.create-post-card {
+    padding-bottom: 0;
+}
+
+.create-post-input {
+    flex-grow: 1;
+    border: none;
+    background-color: #f0f2f5;
+    border-radius: 20px;
+    padding: 10px 15px;
+    outline: none;
+    resize: none;
+}
+
+.post-divider {
+    margin: 12px 16px;
+    border-color: #e0e0e0;
+}
+
+.create-post-actions-new {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 16px 12px 16px;
+}
+
+.action-btn-new {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #65676b;
+    background-color: transparent;
+    border: none;
+    /* MEJORA: Transición más completa y suave */
+    transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    margin-right: auto;
+}
+
+.action-btn-new:hover {
+    background-color: #f0f2f5;
+    /* MEJORA: Efecto de "levantamiento" al pasar el cursor */
+    transform: translateY(-2px);
+    /* MEJORA: Sombra sutil para darle profundidad */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn-new:active {
+    background-color: #e4e6e9;
+    transform: scale(0.98);
+    box-shadow: none; /* Quita la sombra al hacer clic */
+}
+
+.action-btn-new i {
+    font-size: 1.5rem;
+    margin-right: 8px;
+}
+
+.action-btn-new span {
+    font-size: 0.95rem;
+}
+
+/* --- Estilos para la vista previa de la imagen --- */
+.image-preview-container {
+    position: relative;
+    padding: 0 16px;
+    margin-top: 10px;
+}
+
+#image-preview {
+    width: 100%;
+    max-height: 400px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #ddd;
+    /* MEJORA: Añade una transición suave para el efecto de brillo */
+    transition: filter 0.3s ease;
+}
+
+/* MEJORA: Oscurece la imagen cuando el cursor está sobre el contenedor */
+.image-preview-container:hover #image-preview {
+    filter: brightness(0.8);
+    cursor: pointer;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: 10px;
+    right: 26px;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 24px;
+    line-height: 28px;
+    text-align: center;
+    cursor: pointer;
+    /* MEJORA: Oculta el botón por defecto con una transición */
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.8);
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+}
+
+/* MEJORA: Muestra el botón cuando el cursor está sobre el contenedor */
+.image-preview-container:hover .remove-image-btn {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
+}
+
+.remove-image-btn:hover {
+    background-color: #fff;
+    transform: scale(1.1); /* Agranda un poco el botón al apuntarlo */
+}
+
+.btn-create-post {
+    background-color: #0d6efd; /* Azul de Bootstrap */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+/* --- Corrección para el botón 'Me Gusta' --- */
+
+/* Por defecto, oculta el corazón relleno */
+.like-btn .bi-heart-fill {
+    display: none;
+}
+/* Por defecto, muestra el corazón vacío */
+.like-btn .bi-heart {
+    display: inline-block; /* O 'block' si prefieres */
+}
+
+/* Cuando el botón TIENE la clase 'liked' */
+.like-btn.liked .bi-heart-fill {
+    display: inline-block; /* Muestra el corazón relleno */
+    color: red; /* Opcional: Color rojo para indicar 'like' */
+}
+.like-btn.liked .bi-heart {
+    display: none; /* Oculta el corazón vacío */
+}
+/* --- Estilos para los Comentarios --- */
+.post-comments {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 10px;
+    margin-top: 15px;
+}
+
+/* NUEVA REGLA para el avatar en los comentarios */
+.comment-item .comment-avatar,
+.comment-item-modal .comment-avatar { /* <-- Añadido selector para el modal */
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-right: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.comment-item {
+    display: flex;
+    align-items: flex-start; /* Alinea avatar y texto arriba */
+    margin-bottom: 10px;
+}
+
+.comment-body {
+    flex-grow: 1; /* Ocupa el espacio restante */
+    background-color: #f0f2f5; /* Fondo gris claro para el texto */
+    border-radius: 18px; /* Bordes redondeados */
+    padding: 8px 12px; /* Espaciado interno */
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between; /* Nombre a la izq, fecha a la der */
+    align-items: baseline;
+    margin-bottom: 2px;
+}
+
+.comment-author {
+    font-weight: 600;
+    color: #050505;
+    text-decoration: none;
+    font-size: 0.85rem;
+    margin-right: 6px;
+}
+
+.comment-date {
+    font-size: 0.75rem;
+    color: #65676b;
+}
+
+.comment-text {
+    font-size: 0.9rem;
+    color: #050505;
+    word-wrap: break-word; /* Evita que texto largo se desborde */
+    margin-bottom: 0; /* Quita margen inferior del párrafo */
+}
+
+/* Ajuste para el botón de eliminar comentario */
+.comment-item .delete-action {
+    margin-left: 8px; /* Separa el botón del texto */
+    flex-shrink: 0; /* Evita que se encoja */
+}
+.comment-item .delete-action .btn-icon {
+    padding: 2px; /* Hace el área clickeable un poco más grande */
+    color: #65676b;
+}
+.comment-item .delete-action .btn-icon:hover {
+    color: #dc3545; /* Rojo al pasar el mouse */
+}
+
+
+.comment-form {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.comment-input {
+    flex-grow: 1;
+    border: none;
+    background-color: #f0f2f5;
+    border-radius: 20px;
+    padding: 8px 15px;
+    margin-right: 8px; /* Espacio antes del botón enviar */
+    outline: none;
+}
+.comment-form .btn-icon {
+    color: #0d6efd; /* Color azul para el ícono de enviar */
+    background: none;
+    border: none;
+    padding: 0;
+}
+.comment-form .btn-icon:hover {
+    color: #0a58ca; /* Azul más oscuro al pasar el mouse */
+}

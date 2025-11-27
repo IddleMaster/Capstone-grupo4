@@ -1,0 +1,129 @@
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: gifters
+      MYSQL_USER: gifters_user
+      MYSQL_PASSWORD: gifters_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - backups:/backups
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      meilisearch:
+        condition: service_started
+      ollama:
+        condition: service_started
+    environment:
+      IS_DOCKER: "1"
+      DJANGO_DB_HOST: db
+      DJANGO_DB_NAME: gifters
+      DJANGO_DB_USER: gifters_user
+      DJANGO_DB_PASSWORD: gifters_pass
+      DEBUG: "1"
+      REDIS_URL: "redis://redis:6379/0"
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      MEILI_URL: ${MEILI_URL}
+      USE_MEILI: ${USE_MEILI}
+      OLLAMA_URL: "http://ollama:11434"
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: rootpass
+    depends_on:
+      db:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.7
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+    ports:
+      - "7700:7700"
+    volumes:
+      - meili_data:/meili_data
+    restart: unless-stopped
+
+  # ================
+  # IA LOCAL (OLLAMA)
+  # ================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  # ================
+  # BACKUPS DIARIOS
+  # ================
+  db-backup:
+    image: mysql:8.0
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MYSQL_DATABASE: gifters
+      MYSQL_USER: gifters_user
+      MYSQL_PASSWORD: gifters_pass
+      MYSQL_HOST: db
+    volumes:
+      - backups:/backups
+      - .:/project:ro
+    command: >
+      sh -c "while true; do
+        echo '📦 Iniciando respaldo diario de BD...'
+        mysqldump --no-tablespaces -h $${MYSQL_HOST} -u $${MYSQL_USER} -p$${MYSQL_PASSWORD} $${MYSQL_DATABASE} > /backups/backup-$$(date +%Y-%m-%d_%H-%M-%S).sql
+        echo 'Respaldo de BD completado.'
+
+        echo '📦 Iniciando respaldo diario de Media...'
+        tar -czf /backups/media-$$(date +%Y-%m-%d_%H-%M-%S).tar.gz -C /project media
+        echo 'Respaldo de Media completado.'
+
+        echo 'Durmiendo por 24 horas...'
+        sleep 86400
+      done"
+
+volumes:
+  mysql_data:
+  meili_data:
+  backups:
+  ollama_data:

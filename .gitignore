@@ -1,0 +1,14 @@
+# Entornos Virtuales
+desktop_env/
+.venv/
+venv/
+
+# Archivos generados de Python/PyInstaller
+__pycache__/
+*.pyc
+*.pyo
+
+# Directorios de PyInstaller y Logs (si los tienes)
+dist/
+build/
+logs/
