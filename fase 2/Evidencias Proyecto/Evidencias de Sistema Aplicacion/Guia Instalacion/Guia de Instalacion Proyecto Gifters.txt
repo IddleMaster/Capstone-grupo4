@@ -1,0 +1,126 @@
+GUÍA PARA LEVANTAR GIFTERS DESDE GITHUB (LOCAL + DOCKER + ESCRITORIO)
+Requisitos principales: instalar Python y Docker Desktop desde Microsoft Store.
+ Todos los comandos deben ejecutarse en PowerShell con permisos de administrador, salvo que se indique lo contrario.
+________________________________________
+1. Habilitar la ejecución de scripts (requerido para entornos virtuales)
+Abrir PowerShell como Administrador y ejecutar:
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+Cerrar y volver a abrir PowerShell.
+________________________________________
+2. Activar WSL2 y características de virtualización requeridas por Docker Desktop
+Ejecutar los siguientes comandos en PowerShell (Administrador):
+dism /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+dism /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+dism /online /enable-feature /featurename:HypervisorPlatform /all /norestart
+dism /online /enable-feature /featurename:Microsoft-Hyper-V-All /all /norestart
+
+(Los cuatro comandos pueden ejecutarse consecutivamente en la misma ventana de PowerShell).
+Nota: Es posible que se muestre el error:
+Error: 0x800f080c
+El nombre de característica Microsoft-Hyper-V-All es desconocido.
+
+Este mensaje puede ignorarse, ya que no compromete el funcionamiento.
+Reiniciar el equipo una vez finalizado el proceso.
+Tras el reinicio, Docker Desktop puede mostrar el mensaje:
+WSL needs updating
+Your version of Windows Subsystem for Linux (WSL) is too old.
+
+El sistema solicitará la actualización de WSL mediante:
+wsl --update
+
+________________________________________
+3. Actualizar WSL (si fue solicitado por Docker Desktop)
+Ejecutar en PowerShell con privilegios de administrador:
+wsl --update
+
+________________________________________
+4. Verificar disponibilidad de Python
+En PowerShell (modo normal):
+python --version
+py --version
+
+________________________________________
+5. Verificar funcionamiento de Docker Desktop
+Abrir Docker Desktop y confirmar que inicia correctamente sin errores.
+________________________________________
+APARTADO VISUAL STUDIO CODE
+(Debe instalarse desde Microsoft Store)
+Una vez instalado VS Code, abrir una nueva terminal:
+ Terminal → Nueva Terminal
+ o presionar Ctrl + Shift + Ñ.
+Si Git no está instalado, descargar e instalar desde:
+ https://git-scm.com/install/windows
+________________________________________
+6. Clonar el repositorio del proyecto
+En la barra lateral izquierda, abrir Source Control (Ctrl + Shift + G) y seleccionar Clone Repository, ingresando:
+https://github.com/IddleMaster/Capstone-grupo4.git
+
+O bien, desde la terminal:
+git clone https://github.com/IddleMaster/Capstone-grupo4.git
+
+Luego, acceder a la ruta interna del proyecto (desde la terminal) :
+cd "fase 2\Evidencias Proyecto\Evidencias de Sistema Aplicacion\Gifters"
+
+________________________________________
+7. Eliminar cualquier entorno virtual previo
+Ejecutar:
+Remove-Item -Recurse -Force .\desktop_env -ErrorAction SilentlyContinue
+
+Es posible que aparezca un error si no existe un entorno previo. Esto es normal.
+
+________________________________________
+8. Crear un nuevo entorno virtual
+Ejecutar todo el siguiente bloque en una única línea:
+python -m venv desktop_env
+& ".\desktop_env\Scripts\Activate.ps1"
+python -m pip install --upgrade pip
+
+Instalaciones adicionales preventivas (pueden arrojar algún error pero no afecta en el proyecto):
+pip install PyQt6
+pip install requests
+
+________________________________________
+9. Construir la imagen Docker
+docker compose build --no-cache web
+
+________________________________________
+10. Levantar el stack principal
+docker compose up
+
+________________________________________
+IMPORTACIÓN DE BASE DE DATOS
+11. Levantar aplicación web local
+Ejecutar nuevamente:
+docker compose up
+
+Cuando el servicio esté activo, abrir en el navegador:
+http://localhost:8080
+Ingresar con las credenciales:
+●	Usuario: root
+
+●	Contraseña: rootpass
+
+Dirigirse a la base de datos llamada gifters.
+Como estará vacía, seleccionar la pestaña "Importar", luego "Seleccionar archivo" y cargar:
+fase 2\Evidencias Proyecto\Evidencias de Sistema Aplicacion\Base de Datos\gifters.sql
+
+Desplazarse al final de la página y seleccionar "Importar".
+ Tras unos segundos, las tablas serán cargadas correctamente.
+Luego abrir la aplicación web en:
+http://localhost:8000
+________________________________________
+12. Levantar aplicación de escritorio
+Ingresar al sistema mediante el botón "Iniciar sesión" con:
+●	Correo: giftersg4@gmail.com
+
+●	Contraseña: Gifters12345678
+
+Una vez dentro, accederá a la página principal donde encontrará el apartado de descarga para administradores. Seleccionar "Descargar Gifter's Admin", lo que descargará un archivo .rar con la aplicación de escritorio.
+Descomprimir el archivo y ejecutar el archivo .exe contenido.
+El sistema solicitará nuevamente credenciales de administrador:
+●	Correo: giftersg4@gmail.com
+
+●	Contraseña: Gifters12345678
+
+Tras unos segundos, la aplicación de escritorio iniciará correctamente.
