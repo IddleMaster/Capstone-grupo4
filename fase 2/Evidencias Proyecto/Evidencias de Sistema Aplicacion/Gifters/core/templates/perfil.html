@@ -944,14 +944,28 @@
       {% with p=it.id_producto url_tienda=p.urls_tienda_activas.first %}
       <div class="gift-card" id="recibido-item-{{ it.id_item }}" data-product-id="{{ p.id_producto }}"
         data-item-id="{{ it.id_item }}" data-shop-url="{% if url_tienda %}{{ url_tienda.url }}{% endif %}">
-        <img
-          src="{% if p.imagen and p.imagen.url %}{{ p.imagen.url }}{% else %}{% static 'img/Gifters/favicongift.png' %}{% endif %}"
-          alt="{{ p.nombre_producto }}" class="card-img">
+        <img 
+  src="
+    {% if p.imagen %}
+        {% if p.imagen.url %}
+            {{ p.imagen.url }}
+        {% elif p.imagen|slice:':4' == 'http' %}
+            {{ p.imagen }}
+        {% else %}
+            /media/{{ p.imagen }}
+        {% endif %}
+    {% else %}
+        {% static 'img/Gifters/favicongift.png' %}
+    {% endif %}
+  "
+  alt="{{ p.nombre_producto }}"
+  class="card-img"
+/>
+
 
         <div class="gift-info">
           <h4>{{ p.nombre_producto }}</h4>
           <p class="brand">{{ p.id_marca.nombre_marca }}</p>
-          <p class="price">{{ p.precio|floatformat:0 }}</p>
           <div class="received-date text-muted">
             Recibido el {{ it.fecha_comprado|date:"d/m/Y" }}
           </div>
@@ -1232,10 +1246,9 @@
             {# #}
             <div class="btn-group w-100" role="group" aria-label="Opción de imagen">
               <input type="radio" class="btn-check" name="imageOption" id="img-product" value="product" autocomplete="off" checked>
-              <label class="btn btn-outline-secondary" for="img-product"> Usar imagen del producto</label>
             
               <input type="radio" class="btn-check" name="imageOption" id="img-upload" value="upload" autocomplete="off">
-              <label class="btn btn-outline-secondary" for="img-upload"> Subir mi propia imagen</label>
+              <label class="btn btn-outline-secondary" for="img-upload"> Subir imagen</label>
             </div>
             
             <div id="image-upload-container" class="mt-2" style="display: none;">

@@ -458,23 +458,6 @@
       {% with p=it.id_producto %}
       <div class="gift-card received-gift" id="recibido-{{ it.id_item }}" data-product-id="{{ p.id_producto }}">
         
-  <img 
-    src="
-      {% if p.imagen %}
-          {% if p.imagen.url %}
-              {{ p.imagen.url }}
-          {% elif p.imagen|slice:':4' == 'http' %}
-              {{ p.imagen }}
-          {% else %}
-              /media/{{ p.imagen }}
-          {% endif %}
-      {% else %}
-          {% static 'img/Gifters/favicongift.png' %}
-      {% endif %}
-    "
-    alt="{{ p.nombre_producto }}"
-    style="width: 100%; height: auto; border-radius: 6px;"
-  >
 
   <div class="gift-info">
     <h4>{{ p.nombre_producto }}</h4>
