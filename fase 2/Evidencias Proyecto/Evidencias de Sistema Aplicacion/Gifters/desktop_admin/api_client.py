@@ -436,7 +436,7 @@ class ApiClient:
             return None, "No autenticado."
     
         if report_format == 'pdf':
-            report_url = f"{self.base_url}/reports/products/download/pdf/"
+            report_url = f"{self.base_url}/reports/site-reviews/download/pdf/" 
         elif report_format == 'excel':
             report_url = f"{self.base_url}/reports/products/download/excel/"
         else: # Default a CSV

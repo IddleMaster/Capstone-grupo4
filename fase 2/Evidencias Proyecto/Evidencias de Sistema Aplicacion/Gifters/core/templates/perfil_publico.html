@@ -423,8 +423,6 @@
           <a class="btn btn-sm btn-outline-primary" href="{% url 'producto_detalle' p.id_producto %}">Ver</a>
           {% with url_tienda=p.url_tienda_principal|default:p.urls_tienda.first %}
           {% if url_tienda %}
-          <a class="btn btn-sm btn-outline-secondary" href="{{ url_tienda.url }}" target="_blank"
-            rel="noopener">Tienda</a>
           {% endif %}
           {% endwith %}
         </div>
@@ -457,7 +455,24 @@
       {% for it in recibidos_publicos %}
       {% with p=it.id_producto %}
       <div class="gift-card received-gift" id="recibido-{{ it.id_item }}" data-product-id="{{ p.id_producto }}">
-        
+        <img 
+          src="
+            {% if p.imagen %}
+                {% if p.imagen.url %}
+                    {{ p.imagen.url }}
+                {% elif p.imagen|slice:':4' == 'http' %}
+                    {{ p.imagen }}
+                {% else %}
+                    /media/{{ p.imagen }}
+                {% endif %}
+            {% else %}
+                {% static 'img/Gifters/favicongift.png' %}
+            {% endif %}
+          "
+          alt="{{ p.nombre_producto }}"
+          style="display: block; width: 100%; height: 220px; object-fit: contain; background-color: #fff; padding: 12px; border-radius: 12px 12px 0 0; border-bottom: 1px solid #f0f0f0;"
+        >
+              
 
   <div class="gift-info">
     <h4>{{ p.nombre_producto }}</h4>

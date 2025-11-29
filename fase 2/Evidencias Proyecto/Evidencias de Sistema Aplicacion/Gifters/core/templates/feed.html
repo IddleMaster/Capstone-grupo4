@@ -891,6 +891,10 @@
             ? c.contenido_censurado
             : c.contenido;
 
+          textoComentario = textoComentario.replace(/@([a-zA-Z0-9_.]+)/g, function(match, username) {
+              return `<a href="/u/${username}" class="text-primary text-decoration-none fw-bold">${match}</a>`;
+          });
+
           const newCommentHtml = `
           <div class="comment-item d-flex align-items-start" id="comment-${c.id}">
             <a href="/u/${username}/">
@@ -947,5 +951,30 @@
 
 </script>
 
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // 1. Definimos la función que convierte texto en enlaces
+    function linkifyMentions(element) {
+      if (!element) return;
+      
+      // Regex: busca '@' seguido de letras, números, guiones o puntos
+      // Nota: Asumimos que el nombre de usuario NO tiene espacios.
+      const mentionRegex = /@([a-zA-Z0-9_.]+)/g;
+      
+      // Reemplazamos el HTML interior
+      element.innerHTML = element.innerHTML.replace(mentionRegex, function(match, username) {
+        // Retornamos el enlace. Ajusta '/u/' si tu URL de perfil es diferente.
+        return `<a href="/u/${username}" class="text-primary text-decoration-none fw-bold" title="Ver perfil de ${username}">${match}</a>`;
+      });
+    }
 
+    // 2. Aplicar a todos los posts existentes al cargar
+    const postContents = document.querySelectorAll('.post-content p');
+    postContents.forEach(p => linkifyMentions(p));
+
+    // 3. Aplicar a todos los comentarios existentes al cargar
+    const commentTexts = document.querySelectorAll('.comment-text');
+    commentTexts.forEach(p => linkifyMentions(p));
+  });
+</script>
 {% endblock %}

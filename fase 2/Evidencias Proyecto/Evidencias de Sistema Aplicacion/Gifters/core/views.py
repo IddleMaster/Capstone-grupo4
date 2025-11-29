@@ -164,7 +164,7 @@ import urllib.parse
 
 # Mínimo de participantes para que el sorteo sea interesante y aleatorio
 # Se puede sobreescribir desde settings.py con SECRET_SANTA_MIN_PARTICIPANTS
-MIN_SECRET_SANTA_PARTICIPANTS = getattr(settings, 'SECRET_SANTA_MIN_PARTICIPANTS', 4)
+MIN_SECRET_SANTA_PARTICIPANTS = getattr(settings, 'SECRET_SANTA_MIN_PARTICIPANTS', 3)
 
 def _validate_participants_count(count: int, is_standalone: bool = False) -> tuple[bool, str]:
     """
@@ -5176,23 +5176,31 @@ def search_friends_for_thanks(request):
 def create_thank_you_post(request):
     """
     Crea una publicación (Post) de agradecimiento en el feed del usuario.
-    Soporta:
-      - image_option = 'product' -> utiliza la imagen guardada del producto si existe
-      - image_option = 'upload'  -> usa `request.FILES['image']` si viene
-      - por defecto solo texto
     """
     try:
         product_id = request.POST.get('product_id')
         thanked_user_id = request.POST.get('thanked_user_id')
-        image_option = request.POST.get('image_option')  # 'product' | 'upload' | None
+        image_option = request.POST.get('image_option')
+        
+        # Recibimos el mensaje personalizado desde el JS (formData.append('message', ...))
+        custom_message = request.POST.get('message') 
 
         producto = get_object_or_404(Producto, pk=product_id) if product_id else None
         thanked_user = get_object_or_404(User, pk=thanked_user_id) if thanked_user_id else None
 
-        contenido = (
-            f"¡Muchas gracias a @{thanked_user.nombre_usuario} por este increíble regalo! 🎁\n\n"
-            f"Recibí un {producto.nombre_producto}."
-        ) if producto and thanked_user else (request.POST.get('contenido') or '')
+        # --- CORRECCIÓN LÓGICA ---
+        # 1. Si el usuario escribió algo (custom_message), usamos eso.
+        # 2. Si no escribió nada, generamos el texto automático por defecto.
+        if custom_message and custom_message.strip():
+            contenido = custom_message
+        elif producto and thanked_user:
+            contenido = (
+                f"¡Muchas gracias a @{thanked_user.nombre_usuario} por este increíble regalo! 🎁\n\n"
+                f"Recibí un {producto.nombre_producto}."
+            )
+        else:
+            contenido = "Publicación de agradecimiento."
+        # -------------------------
 
         post = Post.objects.create(
             id_usuario=request.user,
@@ -5206,10 +5214,10 @@ def create_thank_you_post(request):
             if image_option == 'product' and producto and getattr(producto, 'imagen', None):
                 # Copiar binario desde storage al Post.imagen
                 try:
-                    # Producto.imagen puede estar en storage; leemos con storage.open
                     with producto.imagen.open(mode='rb') as f:
                         data = f.read()
                     fname = os.path.basename(producto.imagen.name or f"prod_{producto.id_producto}.jpg")
+                    # Usamos save=False para guardar todo junto al final
                     post.imagen.save(f"thank_{uuid.uuid4().hex}_{fname}", ContentFile(data), save=False)
                 except Exception:
                     pass

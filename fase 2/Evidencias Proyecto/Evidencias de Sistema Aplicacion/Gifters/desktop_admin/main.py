@@ -1711,9 +1711,7 @@ class MainWindow(QMainWindow):
         self.btn_download_top_users_pdf.setStyleSheet("background-color: #dc3545; color: white; padding: 10px; font-size: 14px; border-radius: 5px;")
         
         # --- IMPORTANTE: Deshabilitado hasta que creemos el backend ---
-        self.btn_download_top_users_pdf.setEnabled(False)
-        self.btn_download_top_users_pdf.setToolTip("Esta función se implementará en el futuro.")
-        # self.btn_download_top_users_pdf.clicked.connect(self.handle_download_top_users_pdf)
+        self.btn_download_top_users_pdf.clicked.connect(self.handle_download_top_users_pdf)
         
         card_download_layout.addWidget(self.btn_download_top_users_pdf)
         card_download_layout.addStretch()

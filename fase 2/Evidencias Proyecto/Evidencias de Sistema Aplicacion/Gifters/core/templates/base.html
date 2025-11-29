@@ -835,7 +835,6 @@
   </style>
 
   <style>
-
     /* Más espacio bajo el header y apertura más suave */
     ul.dropdown-menu[aria-labelledby="notifDropdown"] {
       margin-top: .55rem;
@@ -1185,14 +1184,22 @@
               style="min-width:320px;max-height:70vh;overflow:auto;" data-bs-auto-close="outside">
               <li class="px-3 py-2 d-flex justify-content-between align-items-center">
                 <span class="fw-semibold">Notificaciones</span>
+              </li>
 
+              <li>
+                <hr class="dropdown-divider">
+              </li>
+
+              {% if notif_items %}
+              <li class="px-3 py-2">
                 <div class="d-flex align-items-center gap-1">
                   <button class="btn btn-sm btn-outline-secondary" id="markAllBtn">Marcar todo leído</button>
-                  <button class="btn btn-sm btn-outline-secondary" id="hideReadBtn" title="Ocultar solo leídas">Ocultar
-                    leídas</button>
-                  <button class="btn btn-sm btn-outline-secondary" id="hideAllBtn" title="Ocultar todas (vista)">Limpiar
-                    lista</button>
+                  <button class="btn btn-sm btn-outline-secondary" id="hideReadBtn">Ocultar leídas</button>
+                  <button class="btn btn-sm btn-outline-secondary" id="hideAllBtn">Limpiar lista</button>
                 </div>
+              </li>
+              {% endif %}
+
               </li>
               <li>
                 <hr class="dropdown-divider">
@@ -1525,7 +1532,7 @@
         <span class="dot hidden" id="tabDotGrupos"></span>
       </button>
       <button class="tab-btn" data-tab="eventos">
-        <i class="bi bi-calendar-event"></i> Eventos
+        <i class="bi bi-calendar-event"></i> Amigo Secreto
       </button>
     </div>
 
@@ -1687,13 +1694,13 @@
           let row = Array.from(list.children).find(
             el => String(el?.dataset?.convId) === String(convId)
           );
-          if (!row) return; 
+          if (!row) return;
 
 
           const l2 = row.querySelector('.line2'); if (l2) l2.textContent = prev.text || '';
           const t = row.querySelector('.chat-time'); if (t && prev.time) t.textContent = formatTime(prev.time);
 
-        
+
           if (list.firstElementChild !== row) list.prepend(row);
         });
       }
@@ -1728,7 +1735,7 @@
       }
 
 
-      
+
       function getCookie(name) {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
@@ -1946,15 +1953,15 @@
           const p = partnerFrom(conv);
           const last = conv.ultimo_mensaje || {};
 
-      
+
           const isImg = (last.tipo === 'imagen') || !!last.archivo_url || !!(last.metadatos && last.metadatos.archivo_url);
           const prevText = isImg ? '📷 Imagen' : slicePreview(last.contenido);
           setPreview(conv.conversacion_id, prevText, last.creado_en, last.id || last.pk || null);
 
           const row = document.createElement('div');
           row.className = 'chat-list-item' + (conv.conversacion_id === window.currentConvId ? ' active' : '');
-          row.dataset.convId = conv.conversacion_id;      
-          row.setAttribute('data-conv', conv.conversacion_id); 
+          row.dataset.convId = conv.conversacion_id;
+          row.setAttribute('data-conv', conv.conversacion_id);
 
 
           const tUsers = typingMap[String(conv.conversacion_id)] || [];
@@ -2550,9 +2557,9 @@
           if (!rMeta.ok) { msgsEl.innerHTML = '<div class="p-2 text-danger">No fue posible abrir la conversación.</div>'; return; }
           const meta = await rMeta.json();
           const isGroup = !!meta?.is_group;
-          window.currentConvIsGroup = isGroup;      
-          if (typeof startPolling === 'function') startPolling(); 
-          if (typeof pollTyping === 'function') pollTyping();     
+          window.currentConvIsGroup = isGroup;
+          if (typeof startPolling === 'function') startPolling();
+          if (typeof pollTyping === 'function') pollTyping();
           const titulo = meta?.titulo || 'Chat';
           if (headerTitleEl) {
 
@@ -2694,7 +2701,6 @@
               if (puedeSortear) {
                 actionsBar.style.display = 'flex';
                 btnDraw.onclick = async () => {
-                  if (!confirm('¿Confirmas realizar el sorteo?')) return;
                   try {
                     const url = `/api/events/${id}/draw/`;
                     const r = await fetch(url, {
@@ -2751,7 +2757,7 @@
 
 
           if (typeof loadMessagesOnce === 'function') {
-            await loadMessagesOnce();          
+            await loadMessagesOnce();
             msgsEl.scrollTop = msgsEl.scrollHeight;
           }
           inputMsgEl?.focus();
@@ -2918,9 +2924,9 @@
       </label>
     `).join('');
 
-          btnCreate.onclick = createGroup;           
+          btnCreate.onclick = createGroup;
           gm.style.display = 'block';
-          document.body.style.overflow = 'hidden';  
+          document.body.style.overflow = 'hidden';
           gmName?.focus();
         }
 
@@ -3163,17 +3169,23 @@
           groupsEl.style.display = 'none';
           eventsEl.style.display = 'none';
           eventsEl.style.display = 'block';
+
           if (headerTitleEl) headerTitleEl.textContent = "Eventos";
 
-          if (typeof window.renderEventsTabHeader === 'function') window.renderEventsTabHeader();
-          if (typeof window.loadEventsInbox === 'function') window.loadEventsInbox();
-          if (typeof window.loadEventsForCurrentGroup === 'function') window.loadEventsForCurrentGroup();
+          if (typeof window.renderEventsTabHeader === 'function') {
+            window.renderEventsTabHeader();
+          }
+
+          // 👇 SIEMPRE la bandeja general de eventos
+          if (typeof window.loadEventsInbox === 'function') {
+            window.loadEventsInbox();
+          }
         } else { // grupos
           friendsEl.style.display = 'none';
           chatsEl.style.visibility = 'hidden';
           eventsEl.style.display = 'none';
           groupsEl.style.display = 'block';
-          if (headerTitleEl) headerTitleEl.textContent = "Grupos"; // 👈 título fijo
+          if (headerTitleEl) headerTitleEl.textContent = "Grupos";
           if (topKebab) topKebab.style.display = 'none';           // en la barra azul nunca
           loadGroups().finally(() => { try { refreshGlobalUnreadDot(); } catch { } });
         }
@@ -3254,14 +3266,14 @@
         form.classList.add('is-open');
         if (animate) {
           sugs.classList.remove('anim-out');
-          void sugs.offsetWidth;            
+          void sugs.offsetWidth;
           sugs.classList.add('anim-in');
         }
         active = -1;
       }
 
       function closeSugs() {
-        if (sugs.hidden) {                 
+        if (sugs.hidden) {
           form.classList.remove('is-open');
           active = -1;
           return;
@@ -3282,7 +3294,7 @@
 
       function show(list) {
         if (!list?.length) return closeSugs();
-        const wasHidden = sugs.hidden;     
+        const wasHidden = sugs.hidden;
         sugs.innerHTML = list.map(tpl).join('');
         openSugs(wasHidden);
       }
@@ -3562,7 +3574,7 @@
         return [];
       };
 
-  
+
       let miembrosIds = [];
       try {
         if (window.URLS.grupoMiembros) {
@@ -3644,7 +3656,7 @@
       const AVATAR_FALLBACK = "{% static 'img/Gifters/favicongift.png' %}";
       const meId = Number('{{ user.id|default:"0"|escapejs }}');
 
-      
+
       const authorId = Number(
         (metaOrConv && (metaOrConv.author_id ||
           (metaOrConv.autor && metaOrConv.autor.id) ||
@@ -3809,7 +3821,7 @@
           const url = window.URLS.grupoEliminar.replace('/0/', `/${convId}/`);
           const csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
           const r = await fetch(url, {
-            method: 'POST', 
+            method: 'POST',
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf }
           });
@@ -3842,14 +3854,14 @@
           const url = window.URLS.grupoSalir.replace('/0/', `/${convId}/`);
           const csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
           const r = await fetch(url, {
-            method: 'POST',               
+            method: 'POST',
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-            body: JSON.stringify({})       
+            body: JSON.stringify({})
           });
 
           if (!r.ok) {
-            
+
             let msg = 'No se pudo abandonar el grupo.';
             try { const j = await r.json(); if (j?.error) msg = j.error; } catch { }
             throw new Error(msg + ` (HTTP ${r.status})`);
@@ -4060,8 +4072,8 @@
       function headerHTML() {
         return `
       <div class="d-flex justify-content-between align-items-center p-2">
-        <span class="fw-semibold">Eventos</span>
-        <button class="btn btn-sm btn-primary" id="btnCreateEvent"><i class="bi bi-plus-lg"></i> Crear evento</button>
+        <span class="fw-semibold">Amigo Secreto</span>
+        <button class="btn btn-sm btn-primary" id="btnCreateEvent"><i class="bi bi-plus-lg"></i> Crear</button>
       </div>`;
       }
 
@@ -4128,7 +4140,6 @@
                 alert('Error: event_id inválido');
                 return;
               }
-              if (!confirm('¿Confirmas realizar el sorteo?')) return;
 
               try {
                 const url = window.URLS.eventoDraw.replace('/0/', `/${eventId}/`);
@@ -4161,7 +4172,7 @@
       async function loadEventsForCurrentGroup() {
         // Si hay grupo abierto, listamos sus events (para ofrecer "Sortear" ahí).
         if (!window.currentConvId) {
-          eventsEl.innerHTML = headerHTML() + '<div class="p-3 text-muted">Abre un grupo para ver sus eventos.</div>';
+          eventsEl.innerHTML = headerHTML() + '<div class="p-3 text-muted">Abre un grupo para ver sus Amigo Secretos.</div>';
           eventsEl.querySelector('#btnCreateEvent')?.addEventListener('click', openCreateEventModal);
           return;
         }
@@ -4185,7 +4196,7 @@
         </div>
       `).join('');
 
-          eventsEl.innerHTML = headerHTML() + `<div class="px-2">${rows || '<div class="p-3 text-muted">Sin eventos</div>'}</div>`;
+          eventsEl.innerHTML = headerHTML() + `<div class="px-2">${rows || '<div class="p-3 text-muted">Sin Amigo Secreto</div>'}</div>`;
           eventsEl.querySelector('#btnCreateEvent')?.addEventListener('click', openCreateEventModal);
 
           // 🔹 Vincula filas → botón grande
@@ -4203,7 +4214,6 @@
                 alert('Error: event_id inválido');
                 return;
               }
-              if (!confirm('¿Confirmas realizar el sorteo?')) return;
               try {
                 const url = window.URLS.eventoDraw.replace('/0/', `/${id}/`);
                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
@@ -4230,7 +4240,7 @@
           // 🔹 NUEVO: vincula las filas con el botón grande de la barra amarilla
           if (typeof window.__wireEventRows === 'function') window.__wireEventRows();
         } catch {
-          eventsEl.innerHTML = headerHTML() + '<div class="p-3 text-danger">No se pudieron cargar eventos.</div>';
+          eventsEl.innerHTML = headerHTML() + '<div class="p-3 text-danger">No se pudieron cargar Amigos Secretos.</div>';
           eventsEl.querySelector('#btnCreateEvent')?.addEventListener('click', openCreateEventModal);
         }
 
@@ -4255,13 +4265,13 @@
         <div class="modal-content">
           <form id="formCrearEvento" autocomplete="off">
             <div class="modal-header">
-              <h5 class="modal-title">Crear evento (Amigo Secreto)</h5>
+              <h5 class="modal-title">Crear Amigo Secreto</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
               <div class="mb-2">
                 <label class="form-label">Título</label>
-                <input type="text" class="form-control" name="titulo" placeholder="Ej: Amigo Secreto fin de año" required>
+                <input type="text" class="form-control" name="titulo" placeholder="Ej: Amigo Secreto Navidad" required>
               </div>
 
               <div class="mb-2">
@@ -4275,8 +4285,12 @@
               </div>
 
               <hr class="my-2">
-              <label class="form-label d-block">Participantes</label>
+              <label class="form-label d-block">Participantes </label>
+              <small class="text-muted">Debes seleccionar al menos 3 participantes.</small>
               <div id="eventFriendPicker"></div>
+                    <div class="invalid-feedback d-none" id="eventFriendPickerError">
+                  Debes seleccionar al menos 3 amigos para crear el Amigo Secreto.
+                 </div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -4324,8 +4338,14 @@
 
           const miembros = getSelectedFriendIds('eventFriendPicker'); // IDs de usuario
           if (!titulo) return alert('Escribe un título.');
-          if (!miembros.length) return alert('Selecciona al menos 1 amigo.');
-
+          if (miembros.length < 3) {
+            if (friendPickerError) {
+              friendPickerError.classList.remove('d-none');
+            }
+            // Opcional: desplazar el scroll hacia el selector de amigos
+            // friendPickerError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+          }
           try {
             const r = await fetch(window.URLS.eventCreateWithChat, {
               method: 'POST',
@@ -4348,7 +4368,7 @@
             btnEventos?.click();
           } catch (e) {
             console.error(e);
-            alert('Error al crear el evento.');
+            alert('Error al crear el Amigo Secreto.');
           }
         };
       }
@@ -4610,7 +4630,7 @@
         return m ? m.pop() : '';
       }
       const csrftoken = getCookie('csrftoken');
-      const badgeEl = document.getElementById('notifBadge'); 
+      const badgeEl = document.getElementById('notifBadge');
 
       //  Mostrar/Ocultar "Marcar todo leído" 
       const markAllBtn = document.getElementById('markAllBtn');
@@ -4623,7 +4643,7 @@
         if (!markAllBtn) return;
         markAllBtn.classList.toggle('d-none', currentUnread() === 0);
       }
-      
+
       toggleMarkAll();
       if (badgeEl) {
         const mo = new MutationObserver(toggleMarkAll);
@@ -4897,8 +4917,8 @@
       function setDotOn(has) {
         const b = document.getElementById('notifBadge');
         if (!b) return;
-        b.textContent = '';                         
-        b.classList.toggle('is-on', !!has);         
+        b.textContent = '';
+        b.classList.toggle('is-on', !!has);
       }
 
       const prev = window.setBadge;
@@ -4947,14 +4967,14 @@
 
       // === Función que realiza el POST del sorteo ===
       async function drawEvent(eventId) {
-        const url = `/api/events/${eventId}/draw/`; 
+        const url = `/api/events/${eventId}/draw/`;
         const response = await fetch(url, {
           method: 'POST',
           headers: {
             'X-CSRFToken': getCookie('csrftoken'),
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({}) 
+          body: JSON.stringify({})
         });
 
         let data = null;
@@ -5004,8 +5024,8 @@
       const drawer = document.getElementById('globalChatDrawer');
       if (!drawer) return;
 
-      const eventsEl = drawer.querySelector('#eventsList');      
-      const actionsEl = drawer.querySelector('#eventActions');    
+      const eventsEl = drawer.querySelector('#eventsList');
+      const actionsEl = drawer.querySelector('#eventActions');
       const sortBtnBig = actionsEl ? actionsEl.querySelector('[data-action="draw-event"]') : null;
 
       // 1) Cuando se renderiza la lista de eventos, enganchamos el click de cada fila
