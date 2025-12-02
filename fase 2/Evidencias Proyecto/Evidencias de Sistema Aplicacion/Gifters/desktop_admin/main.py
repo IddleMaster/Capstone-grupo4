@@ -720,7 +720,7 @@ class WarningTypeDialog(QDialog):
 # --- CLASE: MainWindow
 # ---
 class MainWindow(QMainWindow):
-    def __init__(self, api_client, is_offline=False,user_email=""): 
+    def __init__(self, api_client, is_offline=False,user_email=""):
         super().__init__()
         
        # --- CÓDIGO PARA AÑADIR EL ÍCONO (Ajustado) ---
@@ -1710,10 +1710,8 @@ class MainWindow(QMainWindow):
         self.btn_download_top_users_pdf = QPushButton("Descargar como PDF")
         self.btn_download_top_users_pdf.setStyleSheet("background-color: #dc3545; color: white; padding: 10px; font-size: 14px; border-radius: 5px;")
         
-        # --- IMPORTANTE: Deshabilitado hasta que creemos el backend ---
-        self.btn_download_top_users_pdf.setEnabled(False)
-        self.btn_download_top_users_pdf.setToolTip("Esta función se implementará en el futuro.")
-        # self.btn_download_top_users_pdf.clicked.connect(self.handle_download_top_users_pdf)
+        
+        self.btn_download_top_users_pdf.clicked.connect(self.handle_download_top_users_pdf)
         
         card_download_layout.addWidget(self.btn_download_top_users_pdf)
         card_download_layout.addStretch()
@@ -3040,35 +3038,34 @@ class MainWindow(QMainWindow):
         """Carga el archivo de log local (admin_app.log) en el visor."""
         # (No mostramos mensaje en la statusbar porque se actualizará mucho)
         QApplication.processEvents()
-        
+
         try:
             if os.path.exists(LOG_FILE_PATH):
                 with open(LOG_FILE_PATH, 'r', encoding='utf-8', errors='replace') as f:
                     content = f.read()
-                
-                # Guarda la posición actual del scroll
+
                 scroll_bar = self.local_log_text_area.verticalScrollBar()
                 is_at_bottom = scroll_bar.value() >= (scroll_bar.maximum() - 10)
 
                 self.local_log_text_area.setPlainText(content)
-                
-                # Si el usuario estaba al final, lo mantenemos al final
+
                 if is_at_bottom:
                     scroll_bar.setValue(scroll_bar.maximum())
-                
+
+                # <-- ESTE ES EL FIX IMPORTANTE DEL ARCHIVO ANTIGUO -->
+                self.log_watcher.addPath(LOG_FILE_PATH) 
+
             else:
                 self.local_log_text_area.setPlainText(f"--- El archivo de log '{LOG_FILE_PATH}' no existe. ---")
-            
-            # --- 👇 AÑADE ESTA LÍNEA 👇 ---
-            # Vuelve a añadir la ruta por si el archivo fue borrado y re-creado
-            self.log_watcher.addPath(LOG_FILE_PATH)
-            # --- ---------------------- ---
+
+            # Nota: El bloque 'except' de tu versión actual ya maneja correctamente el error.
 
         except Exception as e:
-            self.local_log_text_area.setPlainText(f"Error al cargar log local: {e}")
+            # Si el widget NO existe (AttributeError), esto lanzará otro error.
+            # Pero si ya lo inicializamos en __init__, esto debería ser seguro.
             logging.error(f"Error al cargar log local: {e}", exc_info=True)
             self.statusBar().showMessage("Error al cargar log local.", 5000)
-    # ---
+            
     # --- SECCIÓN 5: Funciones de Acción (Handlers)
     # ---
 

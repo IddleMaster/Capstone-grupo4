@@ -164,7 +164,7 @@ import urllib.parse
 
 # Mínimo de participantes para que el sorteo sea interesante y aleatorio
 # Se puede sobreescribir desde settings.py con SECRET_SANTA_MIN_PARTICIPANTS
-MIN_SECRET_SANTA_PARTICIPANTS = getattr(settings, 'SECRET_SANTA_MIN_PARTICIPANTS', 4)
+MIN_SECRET_SANTA_PARTICIPANTS = getattr(settings, 'SECRET_SANTA_MIN_PARTICIPANTS', 3)
 
 def _validate_participants_count(count: int, is_standalone: bool = False) -> tuple[bool, str]:
     """
@@ -4227,7 +4227,111 @@ def download_active_products_pdf(request): # Nuevo nombre de función
     except Exception as e:
         print(f"Error generando PDF de productos: {e}") # Mensaje específico
         return Response({"error": f"No se pudo generar el reporte PDF: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)  
-    
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def download_site_reviews_report_pdf(request):
+    """
+    Genera y devuelve un archivo PDF con la lista de reseñas del sitio.
+    """
+    try:
+        # 1. Obtener los datos (igual que en SiteReviewsReportAPIView)
+        latest_reviews = (
+            ResenaSitio.objects
+            .order_by('-fecha_resena')
+            .select_related('id_usuario')
+            .all() # Traemos todo el objeto para el template
+        )
+        
+        filename_base = f"reporte_resenas_sitio_{datetime.date.today()}"
+        
+        # 2. Renderizar el template HTML (utilizando tu template existente)
+        # NOTA: Asegúrate de que el archivo site_reviews_report_pdf.html
+        # esté en la carpeta templates/reports/
+        template = get_template('reports/site_reviews_report_pdf.html')
+        context = {
+            # En tu template (site_reviews_report_pdf.html) usas la variable 'reviews'
+            'reviews': latest_reviews, 
+            'generation_date': timezone.now()
+        }
+        html = template.render(context)
+        
+        # 3. Convertir HTML a PDF (usando la librería xhtml2pdf)
+        result = BytesIO()
+        # Asegúrate de usar .encode("UTF-8")
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result) 
+
+        # 4. Devolver la respuesta PDF
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename_base}.pdf"'
+            return response
+        else:
+            print(f"Error generando PDF de reseñas: {pdf.err}")
+            return Response(
+                {"error": "No se pudo generar el reporte PDF. Error en la conversión."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    except Exception as e:
+        print(f"Error excepcional generando PDF de reseñas: {e}")
+        logging.error(f"Error al generar PDF de reseñas: {e}", exc_info=True)
+        return Response(
+            {"error": f"No se pudo generar el reporte PDF: {e}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+        
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def download_site_reviews_report_pdf(request):
+    """
+    Genera y devuelve un archivo PDF con la lista de reseñas del sitio.
+    """
+    try:
+        # 1. Obtener los datos (igual que en SiteReviewsReportAPIView)
+        latest_reviews = (
+            ResenaSitio.objects
+            .order_by('-fecha_resena')
+            .select_related('id_usuario')
+            .all() # Traemos todo el objeto para el template
+        )
+        
+        filename_base = f"reporte_resenas_sitio_{datetime.date.today()}"
+        
+        # 2. Renderizar el template HTML (utilizando tu template existente)
+        template = get_template('reports/site_reviews_report_pdf.html')
+        context = {
+            # En tu template (site_reviews_report_pdf.html) usas la variable 'reviews'
+            'reviews': latest_reviews, 
+            'generation_date': timezone.now()
+        }
+        html = template.render(context)
+        
+        # 3. Convertir HTML a PDF (usando la librería xhtml2pdf)
+        result = BytesIO()
+        # Asegúrate de usar .encode("UTF-8")
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result) 
+
+        # 4. Devolver la respuesta PDF
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename_base}.pdf"'
+            return response
+        else:
+            print(f"Error generando PDF de reseñas: {pdf.err}")
+            return Response(
+                {"error": "No se pudo generar el reporte PDF. Error en la conversión."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    except Exception as e:
+        print(f"Error excepcional generando PDF de reseñas: {e}")
+        logging.error(f"Error al generar PDF de reseñas: {e}", exc_info=True)
+        return Response(
+            {"error": f"No se pudo generar el reporte PDF: {e}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+        
 @api_view(['GET'])  
 @permission_classes([IsAdminUser])  
 def download_active_products_excel(request): # Nuevo nombre específico
@@ -5318,23 +5422,31 @@ def search_friends_for_thanks(request):
 def create_thank_you_post(request):
     """
     Crea una publicación (Post) de agradecimiento en el feed del usuario.
-    Soporta:
-      - image_option = 'product' -> utiliza la imagen guardada del producto si existe
-      - image_option = 'upload'  -> usa `request.FILES['image']` si viene
-      - por defecto solo texto
     """
     try:
         product_id = request.POST.get('product_id')
         thanked_user_id = request.POST.get('thanked_user_id')
-        image_option = request.POST.get('image_option')  # 'product' | 'upload' | None
+        image_option = request.POST.get('image_option')
+        
+        # Recibimos el mensaje personalizado desde el JS (formData.append('message', ...))
+        custom_message = request.POST.get('message') 
 
         producto = get_object_or_404(Producto, pk=product_id) if product_id else None
         thanked_user = get_object_or_404(User, pk=thanked_user_id) if thanked_user_id else None
 
-        contenido = (
-            f"¡Muchas gracias a @{thanked_user.nombre_usuario} por este increíble regalo! 🎁\n\n"
-            f"Recibí un {producto.nombre_producto}."
-        ) if producto and thanked_user else (request.POST.get('contenido') or '')
+        # --- CORRECCIÓN LÓGICA ---
+        # 1. Si el usuario escribió algo (custom_message), usamos eso.
+        # 2. Si no escribió nada, generamos el texto automático por defecto.
+        if custom_message and custom_message.strip():
+            contenido = custom_message
+        elif producto and thanked_user:
+            contenido = (
+                f"¡Muchas gracias a @{thanked_user.nombre_usuario} por este increíble regalo! 🎁\n\n"
+                f"Recibí un {producto.nombre_producto}."
+            )
+        else:
+            contenido = "Publicación de agradecimiento."
+        # -------------------------
 
         post = Post.objects.create(
             id_usuario=request.user,
@@ -5348,10 +5460,10 @@ def create_thank_you_post(request):
             if image_option == 'product' and producto and getattr(producto, 'imagen', None):
                 # Copiar binario desde storage al Post.imagen
                 try:
-                    # Producto.imagen puede estar en storage; leemos con storage.open
                     with producto.imagen.open(mode='rb') as f:
                         data = f.read()
                     fname = os.path.basename(producto.imagen.name or f"prod_{producto.id_producto}.jpg")
+                    # Usamos save=False para guardar todo junto al final
                     post.imagen.save(f"thank_{uuid.uuid4().hex}_{fname}", ContentFile(data), save=False)
                 except Exception:
                     pass

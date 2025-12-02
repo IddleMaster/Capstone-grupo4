@@ -1242,13 +1242,21 @@
           </div>
 
           <div id="public-post-options" class="mb-3">
+  
+            <div class="mb-3">
+              <label for="public-message-text" class="form-label">Mensaje para el feed</label>
+              <textarea class="form-control" id="public-message-text" rows="3"></textarea>
+              <div class="form-text text-muted" style="font-size: 0.85rem;">
+                Puedes editar este mensaje antes de publicar.
+              </div>
+            </div>
             <label class="form-label">Imagen para la publicación:</label>
-            {# #}
             <div class="btn-group w-100" role="group" aria-label="Opción de imagen">
               <input type="radio" class="btn-check" name="imageOption" id="img-product" value="product" autocomplete="off" checked>
-            
+
+
               <input type="radio" class="btn-check" name="imageOption" id="img-upload" value="upload" autocomplete="off">
-              <label class="btn btn-outline-secondary" for="img-upload"> Subir imagen</label>
+              <label class="btn btn-outline-secondary" for="img-upload"> Subir una foto</label>
             </div>
             
             <div id="image-upload-container" class="mt-2" style="display: none;">
@@ -2320,15 +2328,26 @@
         if (!selectedItem) return;
 
         thankedUserIdInput.value = selectedItem.dataset.userId;
-        
+        const friendName = selectedItem.dataset.userName; // Nombre del amigo
+        const productName = productoNombreEl.textContent; // Nombre del producto (ya lo tenías capturado)
+
         // Actualiza el span de info dentro del chip
-        selectedUserInfo.innerHTML = `<img src="${selectedItem.dataset.userAvatar}" class="rounded-circle"> <strong>${selectedItem.dataset.userName}</strong>`;
+        selectedUserInfo.innerHTML = `<img src="${selectedItem.dataset.userAvatar}" class="rounded-circle"> <strong>${friendName}</strong>`;
+        
         // Muestra el display del chip
         selectedUserDisplay.style.display = 'flex';
         
         // Oculta el buscador
         searchContainer.style.display = 'none';
         searchResultsEl.innerHTML = '';
+        
+        // --- NUEVA LÓGICA: Pre-llenar el mensaje público ---
+        const publicMsgInput = document.getElementById('public-message-text');
+        if (publicMsgInput) {
+            // Aquí creamos el mensaje por defecto
+            publicMsgInput.value = `¡Muchas gracias a ${friendName} por este increíble regalo! 🎁 Recibí: ${productName}.`;
+        }
+        // ---------------------------------------------------
         
         btnEnviar.disabled = false;
       });
@@ -2362,6 +2381,12 @@
         if (tipo === 'publico') {
           const imageOption = document.querySelector('input[name="imageOption"]:checked').value;
           formData.append('image_option', imageOption);
+          
+          // --- NUEVO: Enviar el contenido del textarea público ---
+          const publicMsg = document.getElementById('public-message-text').value;
+          formData.append('message', publicMsg); 
+          // Nota: Asegúrate que tu view de Django espere recibir 'message' o 'contenido'
+          // -------------------------------------------------------
 
           if (imageOption === 'upload') {
             const fileInput = document.getElementById('thank-you-image');
