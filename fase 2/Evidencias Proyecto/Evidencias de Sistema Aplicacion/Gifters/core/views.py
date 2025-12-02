@@ -4016,6 +4016,148 @@ def chat_unread_summary(request):
 ############
 ############
 ####################DESKTOP FUNCTIONS!!!
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def download_top_users_report_pdf(request):
+    """
+    Genera un PDF con el gráfico de Top Usuarios Activos y su tabla de desglose.
+    
+    Resuelve: Problemas de renderizado de tabla (acrónimos/ancho) y posibles errores 500
+    relacionados con Matplotlib/Pandas en entornos sin datos o sin DISPLAY.
+    """
+    try:
+        # 1. Obtener y procesar los datos (Misma lógica que la APIView)
+        # --------------------------------------------------------------------------
+        top_users_data = list(
+            RegistroActividad.objects
+            .values('id_usuario')
+            .annotate(activity_score=Count('id_actividad'))
+            .order_by('-activity_score')
+            .values_list('id_usuario', flat=True)[:10]  
+        )
+
+        activity_details = (
+            RegistroActividad.objects
+            .filter(id_usuario__in=top_users_data)
+            .values('id_usuario__id', 'id_usuario__nombre_usuario', 'tipo_actividad')
+            .annotate(count=Count('id_actividad'))
+            .order_by('id_usuario__id', 'tipo_actividad')
+        )
+        
+        user_ids_with_username = User.objects.filter(id__in=top_users_data).values('id', 'nombre_usuario')
+        results_map = {user['id']: {'user_id': user['id'], 'nombre_usuario': user['nombre_usuario'], 'total_score': 0, 'breakdown': {}} for user in user_ids_with_username}
+        
+        for detail in activity_details:
+            user_id = detail['id_usuario__id']
+            count = detail['count']
+            activity_type = detail['tipo_actividad']
+            if user_id in results_map:
+                results_map[user_id]['total_score'] += count
+                results_map[user_id]['breakdown'][activity_type] = count
+
+        final_list = sorted(results_map.values(), key=lambda x: x['total_score'], reverse=True)
+        # --------------------------------------------------------------------------
+        
+        filename_base = f"reporte_top_usuarios_{datetime.date.today()}"
+        image_base64 = None
+        table_data = []
+
+        # Mapeo de columnas para la tabla detallada (¡NUEVOS ACRÓNIMOS PARA LA SALIDA!)
+        column_map_display = {
+            'nuevo_post': "Posts", 
+            'nuevo_comentario': "Comentarios",
+            'nueva_reaccion': "Likes", 
+            'nuevo_seguidor': "SA", # Usaremos SA (Seguidores)
+            'nuevo_regalo': "FA",   # Usaremos FA (Favoritos)
+            'otro': "Otros"  
+        }
+        
+        # 2. Generar datos de la tabla y gráfico (SÓLO si hay datos)
+        if final_list:
+            
+            try:
+                df = pd.DataFrame(final_list)
+                
+                # Crear la tabla de datos, renombrando las claves
+                for user_data in final_list:
+                    row = {
+                        "Usuario": user_data['nombre_usuario'],
+                        # Claves con guion bajo para el acceso en la plantilla
+                        "Puntaje_Total": user_data['total_score'] 
+                    }
+                    
+                    for key, display_name in column_map_display.items():
+                        # Usamos el nombre simplificado como clave
+                        row[display_name] = user_data['breakdown'].get(key, 0)
+                        
+                    # Mantenemos las claves de Posts/Comments/Likes sin cambio, ya que no tienen puntos/espacios
+                    row["Posts"] = row.get("Posts", 0)
+                    row["Comentarios"] = row.get("Comentarios", 0)
+                    row["Likes"] = row.get("Likes", 0)
+
+                    table_data.append(row)
+
+                # Generar el gráfico de barras (usando try/except para robustez)
+                if 'nombre_usuario' in df.columns and 'total_score' in df.columns and not df.empty:
+                    df_plot = df[['nombre_usuario', 'total_score']].copy()
+                    df_plot = df_plot.sort_values(by='total_score', ascending=True)
+
+                    plt.figure(figsize=(10, 6))
+                    plt.barh(df_plot['nombre_usuario'], df_plot['total_score'], color='#004a99')
+                    
+                    plt.title('Top 10 Usuarios por Puntuación Total', fontsize=14)
+                    plt.xlabel('Puntuación Total de Actividad', fontsize=11)
+                    plt.tight_layout()
+
+                    # Guardar el gráfico en Base64
+                    buf = BytesIO()
+                    plt.savefig(buf, format='png')
+                    plt.close()
+                    buf.seek(0)
+                    image_base64 = base64.b64encode(buf.read()).decode('utf-8')
+                    buf.close()
+                
+            except Exception as e:
+                log.error(f"Fallo al generar gráfico/DataFrame para PDF: {e}", exc_info=True)
+                image_base64 = None
+                
+        # 3. Renderizar el template HTML (Ajuste de Cabeceras Final)
+        
+        # Cabeceras: Quitamos "ID", que causaba problemas de espacio.
+        breakdown_headers = ["Usuario", "Puntaje Total"] + list(column_map_display.values())
+        template = get_template('reports/top_users_pdf.html') 
+        context = {
+            'top_users': final_list, 
+            'table_data': table_data, 
+            'image_base64': image_base64,
+            'generation_date': timezone.now(),
+            'breakdown_headers': breakdown_headers
+        }
+        html = template.render(context)
+        
+        # 4. Convertir HTML a PDF y devolver (la lógica de conversión no se toca)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result) 
+
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename_base}.pdf"'
+            return response
+        else:
+            log.error(f"Error fatal de conversión a PDF (pisa.err): {pdf.err}")
+            return Response(
+                {"error": f"Error del servidor (500): No se pudo generar el PDF (Error de conversión)."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    except Exception as e:
+        log.critical(f"CRASH FATAL en download_top_users_report_pdf: {e}", exc_info=True)
+        return Response(
+            {"error": f"Error del servidor (500). Fallo al procesar los datos para el PDF. Mensaje: {e}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
 
 @api_view(['GET'])  
 @permission_classes([IsAdminUser])  
