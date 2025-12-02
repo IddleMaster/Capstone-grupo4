@@ -4173,7 +4173,7 @@ def download_active_products_csv(request):
             content_type='text/csv',
             headers={'Content-Disposition': f'attachment; filename="{filename_base}.csv"'},
         )
-        response.write('\ufeff'.encode('utf8')) # BOM  
+        response.write('\ufeff'.encode('utf8')) # BOM para UTF-8
         writer = csv.writer(response, delimiter=';')  
 
         # Encabezado
@@ -4183,17 +4183,36 @@ def download_active_products_csv(request):
         ])
         # Filas
         for producto in productos:  
+            # Manejo seguro de campos nulos/vacíos
+            nombre_cat = producto.id_categoria.nombre_categoria if producto.id_categoria else ''
+            nombre_marca = producto.id_marca.nombre_marca if producto.id_marca else ''
+            
+            # Manejo seguro de la URL de la imagen y URL absoluta
+            imagen_url = ''
+            if producto.imagen:
+                try:
+                    # Intenta construir la URL absoluta de forma segura
+                    imagen_url = request.build_absolute_uri(producto.imagen.url)
+                except Exception:
+                    imagen_url = str(producto.imagen) # Si falla, usa el path relativo
+
             writer.writerow([  
-                producto.id_producto, producto.nombre_producto, producto.descripcion, producto.precio,
-                producto.id_categoria_id, producto.id_categoria.nombre_categoria if producto.id_categoria else '',
-                producto.id_marca_id, producto.id_marca.nombre_marca if producto.id_marca else '',
-                request.build_absolute_uri(producto.imagen.url) if producto.imagen else ''
+                str(producto.id_producto), 
+                str(producto.nombre_producto), 
+                str(producto.descripcion), 
+                str(producto.precio) if producto.precio is not None else '',
+                str(producto.id_categoria_id) if producto.id_categoria_id is not None else '', 
+                nombre_cat,
+                str(producto.id_marca_id) if producto.id_marca_id is not None else '', 
+                nombre_marca,
+                imagen_url
             ])
         return response  
 
     except Exception as e:
+        # Devolver un 500 con detalle para el cliente
         print(f"Error generando CSV de productos: {e}")  
-        return Response({"error": f"No se pudo generar el reporte CSV: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)  
+        return Response({"error": f"No se pudo generar el reporte CSV: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     
 @api_view(['GET'])  
@@ -4334,45 +4353,57 @@ def download_site_reviews_report_pdf(request):
         
 @api_view(['GET'])  
 @permission_classes([IsAdminUser])  
-def download_active_products_excel(request): # Nuevo nombre específico
+def download_active_products_excel(request):
     """
     Genera y devuelve un archivo Excel (.xlsx) con todos los productos activos.
     """
     try:
-        # Obtener datos (igual que en las otras vistas)
         productos = Producto.objects.filter(activo=True).select_related('id_categoria', 'id_marca').order_by('id_producto')  
         filename_base = f"productos_activos_{datetime.date.today()}"  
 
-        # Preparar datos para Pandas (igual que antes)
         data_list = []
         for p in productos:
+            
+            nombre_cat = p.id_categoria.nombre_categoria if p.id_categoria else ''
+            nombre_marca = p.id_marca.nombre_marca if p.id_marca else ''
+            
+            imagen_url = ''
+            if p.imagen:
+                try:
+                    imagen_url = request.build_absolute_uri(p.imagen.url)
+                except Exception:
+                    imagen_url = str(p.imagen)
+
             data_list.append({
-                'ID Producto': p.id_producto,
-                'Nombre': p.nombre_producto,
-                'Descripcion': p.descripcion,
-                'Precio': p.precio,
-                'Categoria ID': p.id_categoria_id,
-                'Categoria Nombre': p.id_categoria.nombre_categoria if p.id_categoria else '',
-                'Marca ID': p.id_marca_id,
-                'Marca Nombre': p.id_marca.nombre_marca if p.id_marca else '',
-                'URL Imagen': request.build_absolute_uri(p.imagen.url) if p.imagen else ''
+                'ID Producto': str(p.id_producto),
+                'Nombre': str(p.nombre_producto),
+                'Descripcion': str(p.descripcion),
+                # Convertimos precio a string si no es None, para evitar problemas de tipos
+                'Precio': str(p.precio) if p.precio is not None else '',
+                'Categoria ID': str(p.id_categoria_id) if p.id_categoria_id is not None else '',
+                'Categoria Nombre': nombre_cat,
+                'Marca ID': str(p.id_marca_id) if p.id_marca_id is not None else '',
+                'Marca Nombre': nombre_marca,
+                'URL Imagen': imagen_url
             })
+        
         df = pd.DataFrame(data_list) # Crear DataFrame
 
-        # Configurar respuesta para Excel
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',  
         )
         response['Content-Disposition'] = f'attachment; filename="{filename_base}.xlsx"'  
 
-        # Escribir DataFrame a Excel en la respuesta
-        df.to_excel(response, index=False, engine='openpyxl')  
+        # Escribir DataFrame a Excel en la respuesta (usando BytesIO si es necesario para compatibilidad)
+        output = BytesIO()
+        df.to_excel(output, index=False, engine='openpyxl')
+        output.seek(0)
+        response.write(output.read())
         return response  
 
     except Exception as e:
-        print(f"Error generando Excel de productos: {e}") # Mensaje específico
-        return Response({"error": f"No se pudo generar el reporte Excel: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)  
-
+        print(f"Error generando Excel de productos: {e}")
+        return Response({"error": f"No se pudo generar el reporte Excel: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 #
 # --- INICIO DE NUEVAS VISTAS DE REPORTES DE USUARIO (CORREGIDO) ---
