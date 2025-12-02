@@ -4085,7 +4085,111 @@ def download_active_products_pdf(request): # Nuevo nombre de función
     except Exception as e:
         print(f"Error generando PDF de productos: {e}") # Mensaje específico
         return Response({"error": f"No se pudo generar el reporte PDF: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)  
-    
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def download_site_reviews_report_pdf(request):
+    """
+    Genera y devuelve un archivo PDF con la lista de reseñas del sitio.
+    """
+    try:
+        # 1. Obtener los datos (igual que en SiteReviewsReportAPIView)
+        latest_reviews = (
+            ResenaSitio.objects
+            .order_by('-fecha_resena')
+            .select_related('id_usuario')
+            .all() # Traemos todo el objeto para el template
+        )
+        
+        filename_base = f"reporte_resenas_sitio_{datetime.date.today()}"
+        
+        # 2. Renderizar el template HTML (utilizando tu template existente)
+        # NOTA: Asegúrate de que el archivo site_reviews_report_pdf.html
+        # esté en la carpeta templates/reports/
+        template = get_template('reports/site_reviews_report_pdf.html')
+        context = {
+            # En tu template (site_reviews_report_pdf.html) usas la variable 'reviews'
+            'reviews': latest_reviews, 
+            'generation_date': timezone.now()
+        }
+        html = template.render(context)
+        
+        # 3. Convertir HTML a PDF (usando la librería xhtml2pdf)
+        result = BytesIO()
+        # Asegúrate de usar .encode("UTF-8")
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result) 
+
+        # 4. Devolver la respuesta PDF
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename_base}.pdf"'
+            return response
+        else:
+            print(f"Error generando PDF de reseñas: {pdf.err}")
+            return Response(
+                {"error": "No se pudo generar el reporte PDF. Error en la conversión."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    except Exception as e:
+        print(f"Error excepcional generando PDF de reseñas: {e}")
+        logging.error(f"Error al generar PDF de reseñas: {e}", exc_info=True)
+        return Response(
+            {"error": f"No se pudo generar el reporte PDF: {e}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+        
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def download_site_reviews_report_pdf(request):
+    """
+    Genera y devuelve un archivo PDF con la lista de reseñas del sitio.
+    """
+    try:
+        # 1. Obtener los datos (igual que en SiteReviewsReportAPIView)
+        latest_reviews = (
+            ResenaSitio.objects
+            .order_by('-fecha_resena')
+            .select_related('id_usuario')
+            .all() # Traemos todo el objeto para el template
+        )
+        
+        filename_base = f"reporte_resenas_sitio_{datetime.date.today()}"
+        
+        # 2. Renderizar el template HTML (utilizando tu template existente)
+        template = get_template('reports/site_reviews_report_pdf.html')
+        context = {
+            # En tu template (site_reviews_report_pdf.html) usas la variable 'reviews'
+            'reviews': latest_reviews, 
+            'generation_date': timezone.now()
+        }
+        html = template.render(context)
+        
+        # 3. Convertir HTML a PDF (usando la librería xhtml2pdf)
+        result = BytesIO()
+        # Asegúrate de usar .encode("UTF-8")
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result) 
+
+        # 4. Devolver la respuesta PDF
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename_base}.pdf"'
+            return response
+        else:
+            print(f"Error generando PDF de reseñas: {pdf.err}")
+            return Response(
+                {"error": "No se pudo generar el reporte PDF. Error en la conversión."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    except Exception as e:
+        print(f"Error excepcional generando PDF de reseñas: {e}")
+        logging.error(f"Error al generar PDF de reseñas: {e}", exc_info=True)
+        return Response(
+            {"error": f"No se pudo generar el reporte PDF: {e}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+        
 @api_view(['GET'])  
 @permission_classes([IsAdminUser])  
 def download_active_products_excel(request): # Nuevo nombre específico

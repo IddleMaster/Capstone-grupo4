@@ -653,34 +653,37 @@ class ApiClient:
         Descarga el reporte PDF de reseñas del sitio desde la API.
         """
         if not self.token:
-            logger.warning("download_site_reviews_report_pdf llamado sin token.")
+            self.logger.warning("download_site_reviews_report_pdf llamado sin token.")
             return None, "No autenticado."
     
+        # URL corregida para el endpoint del reporte de reseñas en PDF
         report_url = f"{self.base_url}/reports/site-reviews/download/pdf/"
     
         try:
-            # Preparamos headers sin 'Content-Type' o 'Accept' de JSON
+            # 1. Preparar headers (sin Content-Type/Accept JSON)
             temp_headers = self.headers.copy()
             if 'Content-Type' in temp_headers: del temp_headers['Content-Type']
             if 'Accept' in temp_headers: del temp_headers['Accept']
     
-            logger.info(f"Iniciando descarga de reporte PDF de reseñas desde {report_url}")
-            response = requests.get(report_url, headers=temp_headers, stream=True)
+            self.logger.info(f"Iniciando descarga de reporte PDF de reseñas desde {report_url}")
+            
+            # 2. Hacer la petición
+            response = requests.get(report_url, headers=temp_headers, stream=True, timeout=self.timeout)
             response.raise_for_status()
     
-            # Verificar que la respuesta sea un PDF
+            # 3. Verificar Content-Type
             content_type = response.headers.get('content-type', '').lower()
             if 'pdf' not in content_type:
                 error_detail = "Respuesta inesperada del servidor (no es PDF)."
                 try:
                     error_data = response.json()
-                    error_detail = error_data.get("error", "Respuesta inesperada (esperaba PDF).")
+                    error_detail = error_data.get("error", error_data.get("detail", "Respuesta inesperada (esperaba PDF)."))
                 except json.JSONDecodeError:
                     pass
-                logger.error(f"Error en descarga de reporte PDF: {error_detail}. Content-Type recibido: {content_type}")
+                self.logger.error(f"Error en descarga de reporte PDF: {error_detail}. Content-Type recibido: {content_type}")
                 return None, error_detail
     
-            logger.info(f"Reporte PDF de reseñas descargado exitosamente ({len(response.content)} bytes).")
+            self.logger.info(f"Reporte PDF de reseñas descargado exitosamente ({len(response.content)} bytes).")
             return response.content, None # Devuelve los bytes del PDF
     
         except requests.exceptions.HTTPError as http_err:
@@ -690,13 +693,15 @@ class ApiClient:
                 error_detail = error_data.get("error", error_data.get("detail", http_err.response.text))
             except json.JSONDecodeError:
                 pass
-            logger.error(f"Error HTTP al descargar reporte de reseñas. Status: {http_err.response.status_code}, Error: {error_detail}", exc_info=True)
+            self.logger.error(f"Error HTTP al descargar reporte de reseñas. Status: {http_err.response.status_code}, Error: {error_detail}", exc_info=True)
             return None, f"Error del servidor ({http_err.response.status_code}): {error_detail}"
+        
         except requests.exceptions.RequestException as e:
-            logger.error(f"download_site_reviews_report_pdf: Error de conexión: {e}", exc_info=True)
+            self.logger.error(f"download_site_reviews_report_pdf: Error de conexión: {e}", exc_info=True)
             return None, f"Error de conexión: {e}"
+        
         except Exception as e:
-            logger.critical(f"Error inesperado en download_site_reviews_report_pdf: {e}", exc_info=True)
+            self.logger.critical(f"Error inesperado en download_site_reviews_report_pdf: {e}", exc_info=True)
             return None, f"Error inesperado: {str(e)}"
         
     
