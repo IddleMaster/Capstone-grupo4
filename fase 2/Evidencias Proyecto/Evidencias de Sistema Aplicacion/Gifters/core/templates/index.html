@@ -253,7 +253,7 @@
     <h4>Descarga para Administradores</h4>
     <p>Descarga la aplicación de escritorio para administrar Gifter's:</p>
 
-    <a href="{% static 'downloads/GiftersAdmin-v1.5.rar' %}" download class="btn btn-primary">
+    <a href="{% static 'downloads/GiftersAdmin-v1.6.zip' %}" download class="btn btn-primary">
       Descargar Gifter's Admin
     </a>
   </div>
@@ -915,9 +915,14 @@
                     </button>
                     <form action="{% url 'resena_sitio_eliminar' %}" method="post" style="display:inline;">
                       {% csrf_token %}
-                      <button class="btn btn-outline-danger btn-sm" onclick="return confirm('¿Eliminar tu reseña?')">
-                        <i class="bi bi-trash"></i> Eliminar
-                      </button>
+                      <button 
+  type="button" 
+  class="btn btn-outline-danger btn-sm eliminar-resena-btn"
+  data-id="{{ r.id }}"
+>
+  <i class="bi bi-trash"></i> Eliminar
+</button>
+
                     </form>
                   </div>
                   {% endif %}
@@ -1408,6 +1413,50 @@
 
 
 </script>
+
+<script>
+document.addEventListener("click", function (e) {
+  const btn = e.target.closest(".eliminar-resena-btn");
+  if (!btn) return;
+
+  e.preventDefault();
+
+  const id = btn.dataset.id;
+
+  Swal.fire({
+    title: "¿Eliminar tu reseña?",
+    text: "Esta acción no se puede deshacer.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar",
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#6c757d"
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "{% url 'resena_sitio_eliminar' %}";
+
+      const csrfInput = document.createElement("input");
+      csrfInput.type = "hidden";
+      csrfInput.name = "csrfmiddlewaretoken";
+      csrfInput.value = "{{ csrf_token }}";
+      form.appendChild(csrfInput);
+
+      const idInput = document.createElement("input");
+      idInput.type = "hidden";
+      idInput.name = "id";
+      idInput.value = id;
+      form.appendChild(idInput);
+
+      document.body.appendChild(form);
+      form.submit();
+    }
+  });
+});
+</script>
+
 
 <div class="d-block d-md-none" style="height: 80px;"></div>
 

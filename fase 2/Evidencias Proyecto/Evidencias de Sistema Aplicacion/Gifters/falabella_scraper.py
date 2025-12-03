@@ -137,7 +137,7 @@ def guardar_en_bd(productos):
 
 
 
-# === CATEGORÍAS FINALES QUE SEGURO FUNCIONAN ===
+# === CATEGORÍAS FINALES ===
 URLS = [
     # Consolas Sony
     {

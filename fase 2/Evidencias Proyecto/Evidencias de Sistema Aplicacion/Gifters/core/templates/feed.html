@@ -887,7 +887,7 @@
           const filtroOn = USAR_FILTRO;
           const filtroQuery = filtroOn ? '?filtro_malas_palabras=1' : '';
 
-          const textoComentario = (filtroOn && c.contenido_censurado)
+          let textoComentario = (filtroOn && c.contenido_censurado)
             ? c.contenido_censurado
             : c.contenido;
 

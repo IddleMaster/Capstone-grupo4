@@ -11,6 +11,7 @@ env.read_env(os.path.join(BASE_DIR, ".env"))
 
 # Variables iniciales
 GIPHY_API_KEY = os.getenv("GIPHY_API_KEY", "")
+
 # ===== Meilisearch  =====
 USE_MEILI = os.getenv("USE_MEILI", "false").lower() == "true"
 MEILI_URL = os.getenv("MEILI_URL", "http://meilisearch:7700")
@@ -165,8 +166,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'giftersg4@gmail.com'          
-EMAIL_HOST_PASSWORD = 'lhix entt ockg lqrl'         
+EMAIL_HOST_USER = 'reportesgifters@gmail.com'          
+EMAIL_HOST_PASSWORD = 'cgbs qsae rsla cudv'         
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER           
 
 # URL base para enlaces de verificación
